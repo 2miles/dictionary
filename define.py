@@ -42,9 +42,9 @@ def main():
     if word == "":
         word = get_random_word(soup)
 
-    definitions_exist = False
-
     print(f"\n-------- Definitions of {word}:\n")
+
+    definitions_exist = False
     for count, dfn in enumerate(soup.find_all("div", class_="definition")):
         definitions_exist = True
         if dfn != None:
