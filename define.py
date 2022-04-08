@@ -3,7 +3,9 @@ from bs4 import BeautifulSoup
 import requests
 import sys
 
-url1 = "https://www.vocabulary.com/dictionary/"
+URL_1 = "https://www.vocabulary.com/dictionary/"
+MAX_WIDTH = 70
+INDENT_WIDTH = 13
 
 
 def get_word_from_argv():
@@ -46,6 +48,9 @@ def get_definitions_list(vocabulary_soup):
             word_type = vocabulary_soup.find("div", class_="pos-icon")
             if word_type != None:
                 word_type = word_type.text
+                if word_type == "adjective":
+                    word_type = "adj."
+                word_type = "(" + word_type + ")"
                 for child in info.find_all("div"):
                     child.decompose()
                 dfn = info.get_text().strip()
@@ -62,23 +67,50 @@ def get_synonyms_list(vocabulary_soup):
 
 
 def display_definitions(entry_list, word):
-    print(f"\n-------- Definitions of {word}:\n")
+    print(f"\nDefinitions of {word}:")
+    print("-" * (MAX_WIDTH + INDENT_WIDTH))
     for count, entry in enumerate(entry_list):
-        print(f"{count + 1}. ({entry[0]})   {entry[1]}")
+        count_str = str(count + 1) + "."
+        print(
+            f"{count_str:<4}{entry[0]:<9}{wrap_text(entry[1].capitalize(),MAX_WIDTH, INDENT_WIDTH)}"
+        )
+
+
+# def display_synonyms(syn_list, word):
+#     print(f"\n---------- Synonyms of {word}:\n")
+#     for count, syn in enumerate(syn_list):
+#         print(f"{syn}, ", end="")
+#         if (count + 1) % 7 == 0:
+#             print()
+#     print("\n\n")
 
 
 def display_synonyms(syn_list, word):
-    print(f"\n---------- Synonyms of {word}:\n")
-    for count, syn in enumerate(syn_list):
-        print(f"{syn}, ", end="")
-        if (count + 1) % 7 == 0:
-            print()
+    print(f"\nSynonyms of {word}:")
+    print("-" * (MAX_WIDTH + INDENT_WIDTH))
+    syn_str = ", ".join(syn_list)
+    print(wrap_text(syn_str, MAX_WIDTH + INDENT_WIDTH))
     print("\n\n")
+
+
+def wrap_text(text, max_width, indent_width=0):
+    word_list = text.split(" ")
+    sum_chars = 0
+    new_word_list = []
+    for word in word_list:
+        sum_chars += len(word) + 1
+        if sum_chars >= max_width:
+            word = "\n" + " " * indent_width + word
+            new_word_list.append(word)
+            sum_chars = len(word) - 1
+        else:
+            new_word_list.append(word)
+    return " ".join(new_word_list)
 
 
 def main():
     word = get_word_from_argv()
-    url = build_url_with_word(url1, word)
+    url = build_url_with_word(URL_1, word)
     soup = make_soup(url)
     if word == "":
         word = get_random_word(soup)
