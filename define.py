@@ -1,3 +1,4 @@
+import enum
 from bs4 import BeautifulSoup
 import requests
 import sys
@@ -35,6 +36,46 @@ def get_random_word(soup):
     return word
 
 
+def get_definitions_list(vocabulary_soup):
+    # returns a list of 2-tuples of strings:  {(typ, def), ...}
+    # typ:  "noun" or "verb" ...
+    # def:  "a single definition"
+    def_list = []
+    for info in vocabulary_soup.find_all("div", class_="definition"):
+        if info != None:
+            word_type = vocabulary_soup.find("div", class_="pos-icon")
+            if word_type != None:
+                word_type = word_type.text
+                for child in info.find_all("div"):
+                    child.decompose()
+                dfn = info.get_text().strip()
+                def_list.append((word_type, dfn))
+    return def_list
+
+
+def get_synonyms_list(vocabulary_soup):
+    synonyms = []
+    for syns in vocabulary_soup.find_all("a", class_="word"):
+        syn = syns.text
+        synonyms.append(syn)
+    return synonyms
+
+
+def display_definitions(entry_list, word):
+    print(f"\n-------- Definitions of {word}:\n")
+    for count, entry in enumerate(entry_list):
+        print(f"{count + 1}. ({entry[0]})   {entry[1]}")
+
+
+def display_synonyms(syn_list, word):
+    print(f"\n---------- Synonyms of {word}:\n")
+    for count, syn in enumerate(syn_list):
+        print(f"{syn}, ", end="")
+        if (count + 1) % 7 == 0:
+            print()
+    print("\n\n")
+
+
 def main():
     word = get_word_from_argv()
     url = build_url_with_word(url1, word)
@@ -42,30 +83,14 @@ def main():
     if word == "":
         word = get_random_word(soup)
 
-    print(f"\n-------- Definitions of {word}:\n")
+    definitions = get_definitions_list(soup)
+    synonyms = get_synonyms_list(soup)
 
-    definitions_exist = False
-    for count, dfn in enumerate(soup.find_all("div", class_="definition")):
-        definitions_exist = True
-        if dfn != None:
-            typ = soup.find("div", class_="pos-icon")
-            if typ != None:
-                typ = typ.text
-                for child in dfn.find_all("div"):
-                    child.decompose()
-                dfn = dfn.get_text().strip()
-                print(f"{count + 1}. ({typ})   {dfn}")
-    if definitions_exist == False:
-        print(f"No definitions for '{word}'")
-    print()
-
-    print(f"\n---------- Synonyms of {word}:\n")
-    for count, dfn in enumerate(soup.find_all("a", class_="word")):
-        syn = dfn.text
-        print(f"{syn}, ", end="")
-        if (count + 1) % 7 == 0:
-            print()
-    print("\n\n")
+    if len(definitions) < 1:
+        print(f"\n\nNo definitions for '{word}'\n\n")
+    else:
+        display_definitions(definitions, word)
+        display_synonyms(synonyms, word)
 
 
 if __name__ == "__main__":
